@@ -1,8 +1,7 @@
 import { RiotAccount, Summoner, Match, LeagueEntry, REGIONS, RegionKey } from "@/types/riot";
 
-const API_KEY = process.env.RIOT_API_KEY;
-
 async function riotFetch<T>(url: string): Promise<T> {
+  const API_KEY = process.env.RIOT_API_KEY;
   if (!API_KEY) {
     throw new Error("RIOT_API_KEY 환경변수가 설정되지 않았습니다.");
   }
