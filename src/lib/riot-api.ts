@@ -105,6 +105,6 @@ export async function getAllAramMatchIds(
   const urfIds = urf.status === "fulfilled" ? urf.value : [];
 
   // 합산 후 중복 제거, 최신순 정렬 (matchId는 타임스탬프 포함)
-  const combined = [...new Set([...aramIds, ...urfIds])];
+  const combined = Array.from(new Set([...aramIds, ...urfIds]));
   return combined.slice(0, count);
 }
