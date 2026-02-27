@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #0d0e1a;
+    --foreground: #e2e8f0;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: "Pretendard Variable", "Pretendard", Inter, system-ui, sans-serif;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  /* Scrollbar Styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #1a1b2e;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #3b82f6;
+    border-radius: 3px;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-card rounded-xl border border-white/5;
+  }
+
+  .badge-win {
+    @apply bg-win/20 text-win text-xs font-bold px-2 py-0.5 rounded;
+  }
+
+  .badge-lose {
+    @apply bg-lose/20 text-lose text-xs font-bold px-2 py-0.5 rounded;
+  }
+
+  .kda-good {
+    @apply text-yellow-400;
+  }
+  .kda-great {
+    @apply text-orange-400;
+  }
+  .kda-perfect {
+    @apply text-red-400;
+  }
+}
