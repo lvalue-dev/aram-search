@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { getAccountByRiotId, getSummonerByPuuid, getLeagueEntries, getAllAramMatchIds, getMatches } from "@/lib/riot-api";
 import { calcSummonerStats } from "@/lib/utils";
-import { RegionKey, REGIONS } from "@/types/riot";
+import { RegionKey, REGIONS, LeagueEntry } from "@/types/riot";
 import SummonerHeader from "@/components/SummonerHeader";
 import StatsPanel from "@/components/StatsPanel";
 import MatchCard from "@/components/MatchCard";
@@ -46,10 +46,11 @@ export default async function SummonerPage({ params }: Props) {
     // 소환사 정보 조회
     const account = await getAccountByRiotId(gameName, tagLine, region);
     const summoner = await getSummonerByPuuid(account.puuid, region);
-    const [leagueEntries, matchIds] = await Promise.all([
-      getLeagueEntries(account.puuid, region),
+    const [leagueEntriesRaw, matchIds] = await Promise.all([
+      getLeagueEntries(account.puuid, region).catch(() => [] as LeagueEntry[]),
       getAllAramMatchIds(account.puuid, region, 20),
     ]);
+    const leagueEntries = Array.isArray(leagueEntriesRaw) ? leagueEntriesRaw : [];
 
     // 최초 20게임 매치 로드
     const initialMatches = await getMatches(matchIds.slice(0, 20), region);
