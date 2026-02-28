@@ -178,7 +178,7 @@ export const REGIONS = {
   kr: { platform: "kr", regional: "asia", name: "한국" },
   na1: { platform: "na1", regional: "americas", name: "북미" },
   euw1: { platform: "euw1", regional: "europe", name: "서유럽" },
-  eun1: { platform: "eun1", regional: "eun1", name: "동유럽" },
+  eun1: { platform: "eun1", regional: "europe", name: "동유럽" },
   jp1: { platform: "jp1", regional: "asia", name: "일본" },
 } as const;
 
