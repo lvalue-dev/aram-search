@@ -47,13 +47,13 @@ export async function getSummonerByPuuid(
   return riotFetch<Summoner>(url);
 }
 
-// 소환사 랭크 정보 조회
+// 소환사 랭크 정보 조회 (PUUID 기반)
 export async function getLeagueEntries(
-  summonerId: string,
+  puuid: string,
   region: RegionKey = "kr"
 ): Promise<LeagueEntry[]> {
   const { platform } = REGIONS[region];
-  const url = `https://${platform}.api.riotgames.com/lol/league/v4/entries/by-summoner/${encodeURIComponent(summonerId)}`;
+  const url = `https://${platform}.api.riotgames.com/lol/league/v4/entries/by-puuid/${encodeURIComponent(puuid)}`;
   return riotFetch<LeagueEntry[]>(url);
 }
 

@@ -47,7 +47,7 @@ export default async function SummonerPage({ params }: Props) {
     const account = await getAccountByRiotId(gameName, tagLine, region);
     const summoner = await getSummonerByPuuid(account.puuid, region);
     const [leagueEntries, matchIds] = await Promise.all([
-      getLeagueEntries(summoner.id, region),
+      getLeagueEntries(account.puuid, region),
       getAllAramMatchIds(account.puuid, region, 20),
     ]);
 
