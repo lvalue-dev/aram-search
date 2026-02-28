@@ -16,7 +16,10 @@ async function riotFetch<T>(url: string): Promise<T> {
   if (!res.ok) {
     if (res.status === 404) throw new Error("소환사를 찾을 수 없습니다.");
     if (res.status === 429) throw new Error("API 요청 한도를 초과했습니다. 잠시 후 다시 시도해주세요.");
-    if (res.status === 403) throw new Error("API 키가 유효하지 않습니다.");
+    if (res.status === 403) {
+      const body = await res.text().catch(() => "");
+      throw new Error(`API 키가 유효하지 않습니다. (URL: ${url.split("riotgames.com")[1]?.split("?")[0] ?? url}, 응답: ${body.slice(0, 100)})`);
+    }
     throw new Error(`API 오류: ${res.status}`);
   }
 
