@@ -92,23 +92,22 @@ export async function getMatches(
     .map((r) => r.value);
 }
 
-// 세 큐(450, 900, 1700) 모두의 매치 ID 조회 후 합산
+// ARAM(450), ARURF(900) 매치 ID 조회 후 합산
+// 참고: 아수라장(칼바람 나락: 아수라장, ARAM Mayhem)은 Riot이 API 접근을 의도적으로 차단하여 조회 불가
 export async function getAllAramMatchIds(
   puuid: string,
   region: RegionKey = "kr",
   count: number = 20
 ): Promise<string[]> {
-  const [aram, urf, arena] = await Promise.allSettled([
+  const [aram, urf] = await Promise.allSettled([
     getAramMatchIds(puuid, region, 450, count),
     getAramMatchIds(puuid, region, 900, count),
-    getAramMatchIds(puuid, region, 1700, count),
   ]);
 
   const aramIds = aram.status === "fulfilled" ? aram.value : [];
   const urfIds = urf.status === "fulfilled" ? urf.value : [];
-  const arenaIds = arena.status === "fulfilled" ? arena.value : [];
 
   // 합산 후 중복 제거
-  const combined = Array.from(new Set([...aramIds, ...urfIds, ...arenaIds]));
+  const combined = Array.from(new Set([...aramIds, ...urfIds]));
   return combined.slice(0, count);
 }
