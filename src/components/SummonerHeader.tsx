@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image";
 import { Summoner, RiotAccount, LeagueEntry } from "@/types/riot";
 import { getProfileIconUrl, getTierColor } from "@/lib/utils";

@@ -28,7 +28,7 @@ export default function RootLayout({
             <nav className="flex items-center gap-4 text-sm text-slate-400">
               <span className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                큐 450 · 900
+                큐 450 · 900 · 1700
               </span>
             </nav>
           </div>

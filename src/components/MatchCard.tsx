@@ -153,26 +153,63 @@ export default function MatchCard({ match, puuid }: MatchCardProps) {
       {/* Expanded: Team comparison */}
       {expanded && (
         <div className="border-t border-white/5 px-4 py-4 bg-black/20">
-          <div className="grid grid-cols-2 gap-4">
-            {[
-              { team: blue, label: "블루팀", color: "text-blue-400" },
-              { team: red, label: "레드팀", color: "text-red-400" },
-            ].map(({ team, label, color }) => (
-              <div key={label}>
-                <div className={`text-xs font-bold mb-2 ${color}`}>{label}</div>
+          {match.info.queueId === 1700 ? (
+            /* 아수라장: 나의 팀 vs 나머지 */
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="text-xs font-bold mb-2 text-blue-400">나의 팀</div>
                 <div className="space-y-1.5">
-                  {team.map((p) => (
-                    <ParticipantRow
-                      key={p.puuid}
-                      participant={p}
-                      isMe={p.puuid === puuid}
-                      maxDamage={maxDamage}
-                    />
-                  ))}
+                  {match.info.participants
+                    .filter((p) => p.teamId === participant.teamId)
+                    .map((p) => (
+                      <ParticipantRow
+                        key={p.puuid}
+                        participant={p}
+                        isMe={p.puuid === puuid}
+                        maxDamage={maxDamage}
+                      />
+                    ))}
                 </div>
               </div>
-            ))}
-          </div>
+              <div>
+                <div className="text-xs font-bold mb-2 text-slate-400">다른 팀들</div>
+                <div className="space-y-1.5">
+                  {match.info.participants
+                    .filter((p) => p.teamId !== participant.teamId)
+                    .map((p) => (
+                      <ParticipantRow
+                        key={p.puuid}
+                        participant={p}
+                        isMe={false}
+                        maxDamage={maxDamage}
+                      />
+                    ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* 칼바람: 블루팀 vs 레드팀 */
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { team: blue, label: "블루팀", color: "text-blue-400" },
+                { team: red, label: "레드팀", color: "text-red-400" },
+              ].map(({ team, label, color }) => (
+                <div key={label}>
+                  <div className={`text-xs font-bold mb-2 ${color}`}>{label}</div>
+                  <div className="space-y-1.5">
+                    {team.map((p) => (
+                      <ParticipantRow
+                        key={p.puuid}
+                        participant={p}
+                        isMe={p.puuid === puuid}
+                        maxDamage={maxDamage}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

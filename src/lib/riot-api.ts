@@ -92,21 +92,23 @@ export async function getMatches(
     .map((r) => r.value);
 }
 
-// 두 큐(450, 900) 모두의 매치 ID 조회 후 합산
+// 세 큐(450, 900, 1700) 모두의 매치 ID 조회 후 합산
 export async function getAllAramMatchIds(
   puuid: string,
   region: RegionKey = "kr",
   count: number = 20
 ): Promise<string[]> {
-  const [aram, urf] = await Promise.allSettled([
+  const [aram, urf, arena] = await Promise.allSettled([
     getAramMatchIds(puuid, region, 450, count),
     getAramMatchIds(puuid, region, 900, count),
+    getAramMatchIds(puuid, region, 1700, count),
   ]);
 
   const aramIds = aram.status === "fulfilled" ? aram.value : [];
   const urfIds = urf.status === "fulfilled" ? urf.value : [];
+  const arenaIds = arena.status === "fulfilled" ? arena.value : [];
 
-  // 합산 후 중복 제거, 최신순 정렬 (matchId는 타임스탬프 포함)
-  const combined = Array.from(new Set([...aramIds, ...urfIds]));
+  // 합산 후 중복 제거
+  const combined = Array.from(new Set([...aramIds, ...urfIds, ...arenaIds]));
   return combined.slice(0, count);
 }

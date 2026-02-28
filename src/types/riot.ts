@@ -165,12 +165,13 @@ export interface SummonerStats {
 }
 
 // 큐 타입 상수
-export const ARAM_QUEUE_IDS = [450, 900] as const;
+export const ARAM_QUEUE_IDS = [450, 900, 1700] as const;
 export type AramQueueId = (typeof ARAM_QUEUE_IDS)[number];
 
 export const QUEUE_NAMES: Record<number, string> = {
   450: "칼바람 나락",
   900: "칼바람 URF",
+  1700: "아수라장",
 };
 
 // 지역 설정
