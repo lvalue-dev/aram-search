@@ -1,6 +1,6 @@
 import { SummonerStats } from "@/types/riot";
-import { getChampionImageUrl, formatNumber } from "@/lib/utils";
-import Image from "next/image";
+import { formatNumber } from "@/lib/utils";
+import ChampionImage from "./ChampionImage";
 
 interface StatsPanelProps {
   stats: SummonerStats;
@@ -99,16 +99,7 @@ export default function StatsPanel({ stats }: StatsPanelProps) {
 
             return (
               <div key={cs.championName} className="flex items-center gap-3">
-                <div className="relative">
-                  <Image
-                    src={getChampionImageUrl(cs.championName)}
-                    alt={cs.championName}
-                    width={36}
-                    height={36}
-                    className="rounded-full"
-                    onError={() => {}}
-                  />
-                </div>
+                <ChampionImage championName={cs.championName} size={36} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-white font-medium truncate">
