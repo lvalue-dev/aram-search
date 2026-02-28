@@ -10,7 +10,7 @@ async function riotFetch<T>(url: string): Promise<T> {
     headers: {
       "X-Riot-Token": API_KEY,
     },
-    next: { revalidate: 60 }, // 1분 캐시
+    cache: "no-store",
   });
 
   if (!res.ok) {
