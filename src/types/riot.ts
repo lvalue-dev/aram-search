@@ -32,10 +32,9 @@ export interface LeagueEntry {
   inactive: boolean;
 }
 
-// 매치 참가자 정보
+// 매치 참가자 정보 (서버에서 필요한 필드만 추려서 클라이언트로 전달)
 export interface MatchParticipant {
   puuid: string;
-  summonerId: string;
   summonerName: string;
   riotIdGameName: string;
   riotIdTagline: string;
@@ -48,6 +47,7 @@ export interface MatchParticipant {
   assists: number;
   totalDamageDealtToChampions: number;
   totalDamageTaken: number;
+  damageSelfMitigated: number;
   goldEarned: number;
   totalMinionsKilled: number;
   neutralMinionsKilled: number;
@@ -61,27 +61,13 @@ export interface MatchParticipant {
   item6: number;
   summoner1Id: number;
   summoner2Id: number;
-  perks: {
-    statPerks: {
-      defense: number;
-      flex: number;
-      offense: number;
-    };
-    styles: Array<{
-      description: string;
-      selections: Array<{
-        perk: number;
-        var1: number;
-        var2: number;
-        var3: number;
-      }>;
-      style: number;
-    }>;
-  };
-  // ARAM specific stats
+  /** 핵심 룬(keystone) perk id */
+  keystoneId: number;
+  /** 보조 룬 스타일 id */
+  secondaryStyleId: number;
   totalHeal: number;
   totalHealsOnTeammates: number;
-  damageSelfMitigated: number;
+  totalDamageShieldedOnTeammates: number;
   killingSprees: number;
   largestKillingSpree: number;
   largestMultiKill: number;
@@ -90,50 +76,43 @@ export interface MatchParticipant {
   quadraKills: number;
   pentaKills: number;
   firstBloodKill: boolean;
-  firstBloodAssist: boolean;
   turretKills: number;
   inhibitorKills: number;
   timeCCingOthers: number;
-  visionScore: number;
   physicalDamageDealtToChampions: number;
   magicDamageDealtToChampions: number;
   trueDamageDealtToChampions: number;
+  gameEndedInEarlySurrender?: boolean;
+  gameEndedInSurrender?: boolean;
+}
+
+export interface MatchTeam {
+  teamId: number;
+  win: boolean;
+  objectives: {
+    champion: { first: boolean; kills: number };
+    tower: { first: boolean; kills: number };
+    inhibitor: { first: boolean; kills: number };
+  };
 }
 
 // 매치 정보
 export interface Match {
   metadata: {
-    dataVersion: string;
     matchId: string;
     participants: string[];
   };
   info: {
     gameCreation: number;
     gameDuration: number;
-    gameId: number;
+    gameEndTimestamp?: number;
     gameMode: string;
-    gameName: string;
-    gameStartTimestamp: number;
-    gameType: string;
     gameVersion: string;
     mapId: number;
-    participants: MatchParticipant[];
-    platformId: string;
     queueId: number;
-    teams: Array<{
-      bans: Array<{ championId: number; pickTurn: number }>;
-      objectives: {
-        baron: { first: boolean; kills: number };
-        champion: { first: boolean; kills: number };
-        dragon: { first: boolean; kills: number };
-        inhibitor: { first: boolean; kills: number };
-        riftHerald: { first: boolean; kills: number };
-        tower: { first: boolean; kills: number };
-      };
-      teamId: number;
-      win: boolean;
-    }>;
-    tournamentCode?: string;
+    platformId: string;
+    participants: MatchParticipant[];
+    teams: MatchTeam[];
   };
 }
 
@@ -147,7 +126,20 @@ export interface ChampionStats {
   deaths: number;
   assists: number;
   totalDamage: number;
+  totalDamageTaken: number;
+  totalGold: number;
   pentaKills: number;
+  quadraKills: number;
+  tripleKills: number;
+  scoreSum: number;
+}
+
+export interface MatchRecord {
+  matchId: string;
+  championName: string;
+  value: number;
+  gameCreation: number;
+  win: boolean;
 }
 
 // 소환사 종합 통계
@@ -161,11 +153,57 @@ export interface SummonerStats {
   avgAssists: number;
   avgKDA: number;
   avgDamage: number;
+  avgDamageTaken: number;
+  avgGold: number;
+  avgKillParticipation: number;
+  avgDuration: number;
+  avgScore: number;
+  /** 양수 = 연승, 음수 = 연패 */
+  streak: number;
+  /** 최신순 최근 결과 (최대 10개) */
+  recentForm: boolean[];
+  mvpCount: number;
+  aceCount: number;
+  multiKills: {
+    double: number;
+    triple: number;
+    quadra: number;
+    penta: number;
+  };
+  damageSplit: {
+    physical: number;
+    magic: number;
+    trueDmg: number;
+  };
+  durationBuckets: Array<{
+    label: string;
+    games: number;
+    wins: number;
+  }>;
+  records: {
+    mostKills: MatchRecord | null;
+    mostDamage: MatchRecord | null;
+    bestKda: MatchRecord | null;
+    longestGame: MatchRecord | null;
+  };
   championStats: ChampionStats[];
 }
 
+/** 데이터 드래곤 기반 에셋 메타데이터 (필요한 항목만 부분 전달) */
+export interface AssetBundle {
+  version: string;
+  /** 영문 챔피언 id -> 한글 이름 */
+  champions: Record<string, string>;
+  /** 아이템 id -> 이름/설명 */
+  items: Record<number, { name: string; plaintext: string }>;
+  /** 스펠 숫자 key -> { id, name } */
+  spells: Record<number, { id: string; name: string }>;
+  /** 룬 id -> { name, icon } (icon: ddragon img 경로) */
+  runes: Record<number, { name: string; icon: string }>;
+}
+
 // 큐 타입 상수
-export const ARAM_QUEUE_IDS = [450, 900, 1700] as const;
+export const ARAM_QUEUE_IDS = [450, 900] as const;
 export type AramQueueId = (typeof ARAM_QUEUE_IDS)[number];
 
 export const QUEUE_NAMES: Record<number, string> = {
@@ -176,11 +214,17 @@ export const QUEUE_NAMES: Record<number, string> = {
 
 // 지역 설정
 export const REGIONS = {
-  kr: { platform: "kr", regional: "asia", name: "한국" },
-  na1: { platform: "na1", regional: "americas", name: "북미" },
-  euw1: { platform: "euw1", regional: "europe", name: "서유럽" },
-  eun1: { platform: "eun1", regional: "europe", name: "동유럽" },
-  jp1: { platform: "jp1", regional: "asia", name: "일본" },
+  kr: { platform: "kr", regional: "asia", name: "한국", short: "KR", defaultTag: "KR1" },
+  jp1: { platform: "jp1", regional: "asia", name: "일본", short: "JP", defaultTag: "JP1" },
+  na1: { platform: "na1", regional: "americas", name: "북미", short: "NA", defaultTag: "NA1" },
+  br1: { platform: "br1", regional: "americas", name: "브라질", short: "BR", defaultTag: "BR1" },
+  euw1: { platform: "euw1", regional: "europe", name: "서유럽", short: "EUW", defaultTag: "EUW" },
+  eun1: { platform: "eun1", regional: "europe", name: "동유럽", short: "EUNE", defaultTag: "EUNE" },
+  oc1: { platform: "oc1", regional: "sea", name: "오세아니아", short: "OCE", defaultTag: "OCE" },
 } as const;
 
 export type RegionKey = keyof typeof REGIONS;
+
+export function isRegionKey(value: string): value is RegionKey {
+  return Object.prototype.hasOwnProperty.call(REGIONS, value);
+}

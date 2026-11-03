@@ -2,56 +2,257 @@
 @tailwind components;
 @tailwind utilities;
 
+/* =========================================================
+   얼어붙은 나락 (Howling Abyss) 디자인 토큰
+   ========================================================= */
 @layer base {
   :root {
-    --background: #0d0e1a;
-    --foreground: #e2e8f0;
+    --bg: #080b14;
+    --fg: #eef3fb;
+    --frost: #7fd6ff;
+    --frost-strong: #45bdf5;
+    --panel: rgba(17, 24, 39, 0.72);
+    --panel-border: rgba(127, 214, 255, 0.1);
+    --win: #4cc2ff;
+    --lose: #ff5c7a;
+    color-scheme: dark;
+  }
+
+  html {
+    scroll-behavior: smooth;
   }
 
   body {
-    background-color: var(--background);
-    color: var(--foreground);
-    font-family: "Pretendard Variable", "Pretendard", Inter, system-ui, sans-serif;
+    background-color: var(--bg);
+    color: var(--fg);
+    font-family: "Pretendard Variable", "Pretendard", Inter, system-ui, -apple-system, sans-serif;
+    font-feature-settings: "tnum" 1, "ss01" 1;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
   }
 
   * {
     box-sizing: border-box;
   }
 
-  /* Scrollbar Styling */
+  ::selection {
+    background: rgba(127, 214, 255, 0.35);
+    color: #fff;
+  }
+
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
   }
   ::-webkit-scrollbar-track {
-    background: #1a1b2e;
+    background: #0c111c;
   }
   ::-webkit-scrollbar-thumb {
-    background: #3b82f6;
-    border-radius: 3px;
+    background: linear-gradient(180deg, #1f2b43, #157fbb);
+    border-radius: 4px;
+    border: 2px solid #0c111c;
+  }
+
+  :focus-visible {
+    outline: 2px solid rgba(127, 214, 255, 0.8);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
 @layer components {
-  .card {
-    @apply bg-card rounded-xl border border-white/5;
+  /* ---------- 패널 / 카드 ---------- */
+  .panel {
+    @apply relative rounded-2xl border border-frost-300/10 bg-abyss-700/70 shadow-card backdrop-blur-md;
+  }
+  .panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(140deg, rgba(127, 214, 255, 0.22), transparent 35%, transparent 70%, rgba(167, 139, 250, 0.16));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+  .panel-hover {
+    @apply transition-all duration-300 hover:-translate-y-0.5 hover:border-frost-300/25 hover:shadow-frost;
   }
 
+  .glass {
+    @apply border border-white/[0.06] bg-white/[0.03] backdrop-blur-md;
+  }
+
+  /* ---------- 텍스트 ---------- */
+  .text-aurora {
+    @apply bg-aurora-text bg-clip-text text-transparent;
+    background-size: 200% auto;
+  }
+  .text-win {
+    color: var(--win);
+  }
+  .text-lose {
+    color: var(--lose);
+  }
+  .label {
+    @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-400;
+  }
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- 버튼 ---------- */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-frost-500 text-abyss-900 hover:bg-frost-400 hover:shadow-glow active:scale-[0.98];
+  }
+  .btn-ghost {
+    @apply btn border border-white/10 bg-white/[0.04] text-ink-200 hover:border-frost-300/30 hover:bg-white/[0.07] hover:text-white;
+  }
+  .btn-icon {
+    @apply inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-ink-300 transition-all hover:border-frost-300/30 hover:text-white;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-medium text-ink-200 transition-colors hover:border-frost-300/30 hover:text-white;
+  }
+  .chip-active {
+    @apply border-frost-400/50 bg-frost-500/15 text-frost-200;
+  }
+
+  /* ---------- 배지 ---------- */
+  .badge {
+    @apply inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider;
+  }
   .badge-win {
-    @apply bg-win/20 text-win text-xs font-bold px-2 py-0.5 rounded;
+    @apply badge bg-win/15 text-win;
   }
-
   .badge-lose {
-    @apply bg-lose/20 text-lose text-xs font-bold px-2 py-0.5 rounded;
+    @apply badge bg-lose/15 text-lose;
+  }
+  .badge-mvp {
+    @apply badge bg-gradient-to-r from-ember-400 to-ember-600 text-abyss-900 shadow-[0_0_14px_rgba(246,178,63,0.45)];
+  }
+  .badge-ace {
+    @apply badge bg-gradient-to-r from-aurora-violet to-aurora-pink text-white shadow-[0_0_14px_rgba(167,139,250,0.4)];
+  }
+  .badge-penta {
+    @apply badge bg-gradient-to-r from-lose to-ember-500 text-white;
   }
 
-  .kda-good {
-    @apply text-yellow-400;
+  /* ---------- 스켈레톤 ---------- */
+  .skeleton {
+    @apply relative overflow-hidden rounded-lg bg-white/[0.05];
   }
-  .kda-great {
-    @apply text-orange-400;
+  .skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(127, 214, 255, 0.12) 50%, transparent 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.8s linear infinite;
   }
-  .kda-perfect {
-    @apply text-red-400;
+
+  /* ---------- 배경 ---------- */
+  .abyss-bg {
+    background:
+      radial-gradient(1200px 600px at 50% -10%, rgba(69, 189, 245, 0.16), transparent 60%),
+      radial-gradient(800px 500px at 90% 20%, rgba(167, 139, 250, 0.1), transparent 60%),
+      radial-gradient(700px 500px at 5% 60%, rgba(45, 212, 191, 0.08), transparent 60%),
+      linear-gradient(180deg, #080b14 0%, #05070d 100%);
+  }
+  .noise::after {
+    content: "";
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .frost-divider {
+    @apply h-px w-full bg-frost-line;
+  }
+
+  /* ---------- 툴팁 ---------- */
+  .tooltip-box {
+    @apply pointer-events-none absolute z-50 w-max max-w-[240px] rounded-lg border border-frost-300/20 bg-abyss-900/95 px-3 py-2 text-left text-xs text-ink-100 shadow-frost backdrop-blur-md;
+  }
+
+  /* ---------- 점수 색 ---------- */
+  .tone-legend {
+    @apply text-ember-300;
+  }
+  .tone-great {
+    @apply text-aurora-violet;
+  }
+  .tone-good {
+    @apply text-frost-300;
+  }
+  .tone-normal {
+    @apply text-ink-200;
+  }
+  .tone-bad {
+    @apply text-ink-400;
+  }
+  .tone-perfect {
+    @apply text-ember-300;
+  }
+
+  /* ---------- 승/패 카드 ---------- */
+  .match-win {
+    background: linear-gradient(90deg, rgba(76, 194, 255, 0.13) 0%, rgba(76, 194, 255, 0.04) 40%, rgba(17, 24, 39, 0.6) 100%);
+    border-color: rgba(76, 194, 255, 0.18);
+  }
+  .match-lose {
+    background: linear-gradient(90deg, rgba(255, 92, 122, 0.13) 0%, rgba(255, 92, 122, 0.04) 40%, rgba(17, 24, 39, 0.6) 100%);
+    border-color: rgba(255, 92, 122, 0.18);
+  }
+  .match-remake {
+    background: linear-gradient(90deg, rgba(154, 168, 191, 0.12) 0%, rgba(17, 24, 39, 0.6) 100%);
+    border-color: rgba(154, 168, 191, 0.18);
+  }
+}
+
+@layer utilities {
+  .stagger > * {
+    animation: rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .stagger > *:nth-child(1) { animation-delay: 0.02s; }
+  .stagger > *:nth-child(2) { animation-delay: 0.06s; }
+  .stagger > *:nth-child(3) { animation-delay: 0.1s; }
+  .stagger > *:nth-child(4) { animation-delay: 0.14s; }
+  .stagger > *:nth-child(5) { animation-delay: 0.18s; }
+  .stagger > *:nth-child(6) { animation-delay: 0.22s; }
+  .stagger > *:nth-child(7) { animation-delay: 0.26s; }
+  .stagger > *:nth-child(8) { animation-delay: 0.3s; }
+  .stagger > *:nth-child(9) { animation-delay: 0.34s; }
+  .stagger > *:nth-child(10) { animation-delay: 0.38s; }
+  .stagger > *:nth-child(n + 11) { animation-delay: 0.42s; }
+
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  .text-shadow-frost {
+    text-shadow: 0 0 24px rgba(127, 214, 255, 0.45);
   }
 }
