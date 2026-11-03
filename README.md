@@ -1,4 +1,4 @@
-# 나락로그 (NARAKLOG) — 칼바람 나락 전적검색
+# FROSTLINE — 칼바람 나락 전적검색
 
 리그 오브 레전드 **칼바람 나락(ARAM)** 전용 전적 검색 사이트. Next.js 14 (App Router) + Tailwind CSS.
 

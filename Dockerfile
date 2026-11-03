@@ -1,4 +1,4 @@
-# 나락로그 — 홈 서버용 멀티스테이지 Docker 이미지
+# FROSTLINE — 홈 서버용 멀티스테이지 Docker 이미지
 FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./

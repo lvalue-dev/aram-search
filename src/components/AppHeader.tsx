@@ -33,8 +33,8 @@ export default function AppHeader() {
             </svg>
           </span>
           <span className="flex flex-col leading-none">
-            <span className="text-xl font-black tracking-tight text-aurora animate-aurora">나락로그</span>
-            <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-ink-400">NARAKLOG · ARAM</span>
+            <span className="text-xl font-black tracking-tight text-aurora animate-aurora">FROSTLINE</span>
+            <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-ink-400">ARAM Records</span>
           </span>
         </Link>
 

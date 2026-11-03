@@ -55,10 +55,10 @@ export default function HomePage() {
           칼바람 나락 전용 전적 검색
         </span>
         <h1 className="relative mt-5 text-5xl font-black tracking-tight sm:text-7xl">
-          <span className="text-aurora animate-aurora text-shadow-frost">나락로그</span>
+          <span className="text-aurora animate-aurora text-shadow-frost">FROSTLINE</span>
         </h1>
         <p className="mt-4 max-w-xl text-base text-ink-300 sm:text-lg">
-          얼어붙은 다리 위에서 벌어진 모든 일을 기록합니다.
+          얼어붙은 외길 위에서 벌어진 모든 일을 기록합니다.
           <br className="hidden sm:block" /> 나락 점수로 매 게임의 기여도를 다시 봅니다.
         </p>
 

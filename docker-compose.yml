@@ -1,8 +1,8 @@
 services:
-  naraklog:
+  frostline:
     build: .
-    image: naraklog:latest
-    container_name: naraklog
+    image: frostline:latest
+    container_name: frostline
     restart: unless-stopped
     ports:
       - "3000:3000"
