@@ -32,7 +32,7 @@ function parseSummoner(raw: string): { gameName: string; tagLine: string } {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { gameName, tagLine } = parseSummoner(params.summoner);
   return {
-    title: `${gameName}#${tagLine} 칼바람 전적`,
+    title: `${gameName}#${tagLine} 나락 기록`,
     description: `${gameName}#${tagLine} 님의 칼바람 나락 전적, 나락 점수, 챔피언별 성적`,
   };
 }

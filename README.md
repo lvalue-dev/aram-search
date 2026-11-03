@@ -1,4 +1,4 @@
-# 칼바람.gg — 칼바람 나락 전적검색
+# 나락로그 (NARAKLOG) — 칼바람 나락 전적검색
 
 리그 오브 레전드 **칼바람 나락(ARAM)** 전용 전적 검색 사이트. Next.js 14 (App Router) + Tailwind CSS.
 
@@ -29,6 +29,15 @@ npm run dev
 ```
 
 Riot API 키 없이 UI 만 확인하려면 `.env.local` 에 `MOCK_RIOT_API=1` 을 넣으면 데모 데이터로 동작합니다.
+
+## 홈 서버 배포 (Docker)
+
+```bash
+cp .env.local.example .env.local   # RIOT_API_KEY 입력
+docker compose up -d --build       # http://<홈서버 IP>:3000
+```
+
+이미지는 `output: "standalone"` 번들을 사용하는 멀티스테이지 빌드입니다. 외부 공개 시에는 리버스 프록시(Caddy/nginx) 뒤에 두고 HTTPS 를 붙이는 것을 권장합니다.
 
 ## 구조
 

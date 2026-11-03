@@ -1,0 +1,14 @@
+services:
+  naraklog:
+    build: .
+    image: naraklog:latest
+    container_name: naraklog
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - RIOT_API_KEY=${RIOT_API_KEY}
+      # Riot 키 없이 데모 데이터로 띄우려면 주석 해제
+      # - MOCK_RIOT_API=1
+    env_file:
+      - .env.local

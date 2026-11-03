@@ -188,7 +188,7 @@ export default function SearchBar({ defaultValue = "", defaultRegion = "kr", siz
             isLarge ? "px-6 text-sm" : "px-3.5 text-xs"
           )}
         >
-          {isLarge ? ".GG" : "검색"}
+          {isLarge ? "기록 보기" : "검색"}
         </button>
       </form>
 
