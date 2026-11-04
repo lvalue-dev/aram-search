@@ -7,7 +7,6 @@ import MultiSearchForm from "@/components/MultiSearchForm";
 import { extractRiotIds } from "@/lib/riot-id";
 import MultiCard, { MultiEntry } from "@/components/MultiCard";
 import AssetsProvider from "@/components/AssetsProvider";
-import DemoBanner from "@/components/DemoBanner";
 
 export const dynamic = "force-dynamic";
 
@@ -53,7 +52,6 @@ export default async function MultiPage({ searchParams }: Props) {
   return (
     <AssetsProvider assets={assets}>
       <div className="space-y-6">
-        <DemoBanner />
         <section className="animate-rise">
           <h1 className="text-2xl font-black text-white">멀티서치</h1>
           <p className="mt-1 text-sm text-ink-400">로비 채팅을 붙여넣으면 최대 5명의 최근 {PER_PLAYER}게임 폼을 나란히 보여줍니다.</p>

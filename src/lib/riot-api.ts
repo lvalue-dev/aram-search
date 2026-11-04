@@ -1,5 +1,4 @@
 import { RiotAccount, Summoner, Match, MatchParticipant, LeagueEntry, REGIONS, RegionKey, ARAM_QUEUE_IDS, HOWLING_ABYSS_MAP_ID } from "@/types/riot";
-import { mockAccount, mockLeague, mockMatch, mockMatchIds, mockSummoner } from "./mock";
 import { TtlCache } from "./ttl-cache";
 import { bucketFor, RateLimitWaitTooLong } from "./rate-limit";
 
@@ -8,11 +7,6 @@ export class RiotApiError extends Error {
     super(message);
     this.name = "RiotApiError";
   }
-}
-
-/** 데모 데이터 모드. 켜져 있으면 Riot API 를 전혀 호출하지 않고 가짜 데이터를 만든다. */
-export function isMockMode(): boolean {
-  return process.env.MOCK_RIOT_API === "1";
 }
 
 // ---------- 캐시 ----------
@@ -206,35 +200,30 @@ function slimMatch(raw: RawMatch): Match {
 // ---------- API ----------
 
 export async function getAccountByRiotId(gameName: string, tagLine: string, region: RegionKey = "kr"): Promise<RiotAccount> {
-  if (isMockMode()) return mockAccount(gameName, tagLine);
   const { account } = REGIONS[region];
   const url = `https://${account}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`;
   return riotFetch<RiotAccount>(url, TTL.account);
 }
 
 export async function getSummonerByPuuid(puuid: string, region: RegionKey = "kr", fresh = false): Promise<Summoner> {
-  if (isMockMode()) return mockSummoner(puuid);
   const { platform } = REGIONS[region];
   const url = `https://${platform}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${encodeURIComponent(puuid)}`;
   return riotFetch<Summoner>(url, TTL.summoner, { fresh });
 }
 
 export async function getLeagueEntries(puuid: string, region: RegionKey = "kr", fresh = false): Promise<LeagueEntry[]> {
-  if (isMockMode()) return mockLeague(puuid);
   const { platform } = REGIONS[region];
   const url = `https://${platform}.api.riotgames.com/lol/league/v4/entries/by-puuid/${encodeURIComponent(puuid)}`;
   return riotFetch<LeagueEntry[]>(url, TTL.league, { fresh });
 }
 
 export async function getAramMatchIds(puuid: string, region: RegionKey = "kr", queueId: number = 450, count: number = 20, start: number = 0, fresh = false): Promise<string[]> {
-  if (isMockMode()) return queueId === 450 ? mockMatchIds(puuid, count, start) : [];
   const { regional } = REGIONS[region];
   const url = `https://${regional}.api.riotgames.com/lol/match/v5/matches/by-puuid/${encodeURIComponent(puuid)}/ids?queue=${queueId}&start=${start}&count=${count}`;
   return riotFetch<string[]>(url, TTL.matchIds, { fresh });
 }
 
 export async function getMatch(matchId: string, region: RegionKey = "kr", puuid?: string): Promise<Match> {
-  if (isMockMode()) return mockMatch(matchId, puuid ?? "");
   const { regional } = REGIONS[region];
   const url = `https://${regional}.api.riotgames.com/lol/match/v5/matches/${encodeURIComponent(matchId)}`;
   const cached = responseCache.get(`slim:${url}`) as Match | undefined;

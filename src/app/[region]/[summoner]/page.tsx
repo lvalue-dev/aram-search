@@ -8,7 +8,6 @@ import { isRegionKey, REGIONS } from "@/types/riot";
 import AssetsProvider from "@/components/AssetsProvider";
 import SummonerHeader from "@/components/SummonerHeader";
 import SummonerTabs from "@/components/SummonerTabs";
-import DemoBanner from "@/components/DemoBanner";
 import Notice from "@/components/ui/Notice";
 
 export const dynamic = "force-dynamic";
@@ -61,7 +60,6 @@ export default async function SummonerPage({ params, searchParams }: Props) {
     return (
       <AssetsProvider assets={assets}>
         <div className="space-y-5">
-          <DemoBanner />
           {tagGuessed && (
             <Notice tone="info" title={`태그 없이 검색해서 ${account.gameName}#${account.tagLine} 계정을 보여드리고 있어요`}>
               찾던 계정이 아니라면 태그까지 붙여서 다시 검색하세요. 예) {gameName}#1234 · 태그는 롤 클라이언트 프로필에서 확인할 수 있어요.

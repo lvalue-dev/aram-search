@@ -1,20 +1,18 @@
 import { NextResponse } from "next/server";
-import { isMockMode } from "@/lib/riot-api";
 import { parseLimits } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   const key = process.env.RIOT_API_KEY ?? "";
-  const mock = isMockMode();
 
   const keyInfo = key ? `설정됨 (${key.slice(0, 8)}...${key.slice(-4)}, 총 ${key.length}자)` : "❌ 미설정 — 서버 환경변수에 RIOT_API_KEY 가 없습니다";
   const limits = parseLimits(process.env.RIOT_RATE_LIMITS).map((w) => `${w.limit}회/${w.ms / 1000}초`);
 
-  let krStatus = mock ? "데모 모드라 스킵" : "키 미설정으로 스킵";
+  let krStatus = "키 미설정으로 스킵";
   let asiaStatus = krStatus;
 
-  if (key && !mock) {
+  if (key) {
     try {
       const res = await fetch("https://kr.api.riotgames.com/lol/status/v4/platform-data", { headers: { "X-Riot-Token": key }, cache: "no-store" });
       const body = await res.text();
@@ -33,7 +31,9 @@ export async function GET() {
   }
 
   return NextResponse.json({
-    dataSource: mock ? "⚠️ 데모 데이터 (MOCK_RIOT_API=1) — 실제 전적이 아닙니다" : "Riot API (실제 데이터)",
+    dataSource: "Riot API (실제 데이터)",
+    // 데모 모드는 삭제됐다. 예전 설정이 남아 있어도 무시된다는 것을 알려준다.
+    ...(process.env.MOCK_RIOT_API ? { notice: "MOCK_RIOT_API 설정이 남아 있지만 데모 모드는 삭제되어 무시됩니다. 지워도 됩니다." } : {}),
     keyInfo,
     rateLimits: limits,
     krPlatformStatus: krStatus,
