@@ -75,10 +75,15 @@ export function mockLeague(puuid: string): LeagueEntry[] {
   ];
 }
 
+/** 데모 데이터임을 알 수 있도록 팀원 이름 목록을 내보낸다 */
+export const MOCK_NAMES = NAMES;
+
 export function mockMatchIds(puuid: string, count: number, start = 0): string[] {
   const total = 63; // 가짜 총 게임 수
+  const base = (hash(puuid) % 100000) * 1000;
   const ids: string[] = [];
-  for (let i = start; i < Math.min(start + count, total); i++) ids.push(`KR_MOCK_${hash(puuid) % 100000}_${i}`);
+  // 숫자가 클수록 최신 게임 (실제 Riot 매치 id 와 같은 규칙)
+  for (let i = start; i < Math.min(start + count, total); i++) ids.push(`KR_${base + 999 - i}`);
   return ids;
 }
 
@@ -140,7 +145,7 @@ function participant(rnd: () => number, teamId: number, win: number, idx: number
 
 export function mockMatch(matchId: string, puuid: string): Match {
   const rnd = mulberry32(hash(matchId));
-  const idx = Number(matchId.split("_").pop() ?? 0);
+  const idx = 999 - (Number(matchId.split("_").pop() ?? 0) % 1000);
   const duration = 780 + Math.floor(rnd() * 1200);
   const myTeam = rnd() > 0.5 ? 100 : 200;
   const blueWin = rnd() > 0.45 ? 1 : 0;
@@ -160,7 +165,7 @@ export function mockMatch(matchId: string, puuid: string): Match {
       gameMode: "ARAM",
       gameVersion: "14.13.600",
       mapId: 12,
-      queueId: rnd() > 0.85 ? 900 : 450,
+      queueId: rnd() > 0.85 ? 2400 : 450,
       platformId: "KR",
       participants,
       teams: [100, 200].map((teamId) => ({

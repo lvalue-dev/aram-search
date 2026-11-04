@@ -14,6 +14,7 @@ interface Props {
   puuid: string;
   region: string;
   hasMore: boolean;
+  nextStart: number;
   now: number;
 }
 
@@ -24,7 +25,7 @@ const TABS = [
 ] as const;
 type TabKey = (typeof TABS)[number]["key"];
 
-export default function SummonerTabs({ stats, matches, puuid, region, hasMore, now }: Props) {
+export default function SummonerTabs({ stats, matches, puuid, region, hasMore, nextStart, now }: Props) {
   const [tab, setTab] = useState<TabKey>("matches");
 
   return (
@@ -55,7 +56,8 @@ export default function SummonerTabs({ stats, matches, puuid, region, hasMore, n
             <StatsPanel stats={stats} />
           </div>
           <div className="min-w-0 flex-1">
-            <MatchListClient initialMatches={matches} puuid={puuid} region={region} hasMore={hasMore} now={now} />
+            {/* key: 전적 갱신 후 새 데이터로 목록 상태를 다시 시작 */}
+            <MatchListClient key={`${puuid}-${now}`} initialMatches={matches} puuid={puuid} region={region} hasMore={hasMore} nextStart={nextStart} now={now} />
           </div>
         </div>
       )}

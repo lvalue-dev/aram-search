@@ -145,6 +145,8 @@ export interface MatchRecord {
 // 소환사 종합 통계
 export interface SummonerStats {
   totalGames: number;
+  /** 집계한 모든 게임에서 한 번도 죽지 않았는지 */
+  perfectKda: boolean;
   wins: number;
   losses: number;
   winRate: number;
@@ -203,24 +205,30 @@ export interface AssetBundle {
 }
 
 // 큐 타입 상수
-export const ARAM_QUEUE_IDS = [450, 900] as const;
+// 450 = 칼바람 나락, 2400 = 칼바람 나락: 아수라장 (ARAM Mayhem)
+// 900 은 "소환사의 협곡" URF 라서 칼바람 전적에 포함하지 않는다.
+export const ARAM_QUEUE_IDS = [450, 2400] as const;
 export type AramQueueId = (typeof ARAM_QUEUE_IDS)[number];
+
+/** 칼바람 나락(Howling Abyss) 맵 id */
+export const HOWLING_ABYSS_MAP_ID = 12;
 
 export const QUEUE_NAMES: Record<number, string> = {
   450: "칼바람 나락",
-  900: "칼바람 URF",
-  1700: "아수라장",
+  2400: "아수라장",
 };
 
 // 지역 설정
+// platform: 소환사/랭크 API, regional: 매치 API, account: 계정(Riot ID) API
+// 계정 API 는 americas / asia / europe 에서만 제공된다 (sea 는 지원하지 않음).
 export const REGIONS = {
-  kr: { platform: "kr", regional: "asia", name: "한국", short: "KR", defaultTag: "KR1" },
-  jp1: { platform: "jp1", regional: "asia", name: "일본", short: "JP", defaultTag: "JP1" },
-  na1: { platform: "na1", regional: "americas", name: "북미", short: "NA", defaultTag: "NA1" },
-  br1: { platform: "br1", regional: "americas", name: "브라질", short: "BR", defaultTag: "BR1" },
-  euw1: { platform: "euw1", regional: "europe", name: "서유럽", short: "EUW", defaultTag: "EUW" },
-  eun1: { platform: "eun1", regional: "europe", name: "동유럽", short: "EUNE", defaultTag: "EUNE" },
-  oc1: { platform: "oc1", regional: "sea", name: "오세아니아", short: "OCE", defaultTag: "OCE" },
+  kr: { platform: "kr", regional: "asia", account: "asia", name: "한국", short: "KR", defaultTag: "KR1" },
+  jp1: { platform: "jp1", regional: "asia", account: "asia", name: "일본", short: "JP", defaultTag: "JP1" },
+  na1: { platform: "na1", regional: "americas", account: "americas", name: "북미", short: "NA", defaultTag: "NA1" },
+  br1: { platform: "br1", regional: "americas", account: "americas", name: "브라질", short: "BR", defaultTag: "BR1" },
+  euw1: { platform: "euw1", regional: "europe", account: "europe", name: "서유럽", short: "EUW", defaultTag: "EUW" },
+  eun1: { platform: "eun1", regional: "europe", account: "europe", name: "동유럽", short: "EUNE", defaultTag: "EUNE" },
+  oc1: { platform: "oc1", regional: "sea", account: "asia", name: "오세아니아", short: "OCE", defaultTag: "OCE" },
 } as const;
 
 export type RegionKey = keyof typeof REGIONS;

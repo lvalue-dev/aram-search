@@ -40,7 +40,17 @@ export default function SummonerHeader({ account, summoner, leagueEntries, regio
   }, [account.puuid]);
 
   const mostPlayed = stats.championStats[0]?.championName;
-  const ranks = leagueEntries.filter((e) => QUEUE_LABEL[e.queueType]).sort((a) => (a.queueType === "RANKED_SOLO_5x5" ? -1 : 1));
+  const ranks = leagueEntries.filter((e) => QUEUE_LABEL[e.queueType]).sort((a, b) => (a.queueType === "RANKED_SOLO_5x5" ? 0 : 1) - (b.queueType === "RANKED_SOLO_5x5" ? 0 : 1));
+
+  async function refreshNow() {
+    // 서버의 짧은 캐시(매치 목록/레벨/랭크)를 비운 뒤 다시 렌더링
+    await fetch("/api/refresh", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ puuid: account.puuid }),
+    }).catch(() => undefined);
+    refresh("최신 전적을 다시 불러오는 중");
+  }
 
   async function share() {
     try {
@@ -155,7 +165,7 @@ export default function SummonerHeader({ account, summoner, leagueEntries, regio
               </svg>
             </button>
           </Tooltip>
-          <button type="button" onClick={() => refresh("최신 전적을 다시 불러오는 중")} disabled={pending} className="btn-primary">
+          <button type="button" onClick={refreshNow} disabled={pending} className="btn-primary">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={pending ? "animate-spin" : ""}>
               <path d="M21 12a9 9 0 11-3-6.7" />
               <path d="M21 3v6h-6" />

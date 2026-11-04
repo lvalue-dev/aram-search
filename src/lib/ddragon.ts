@@ -47,6 +47,12 @@ type FullCatalog = {
 
 const catalogCache = new Map<string, Promise<FullCatalog>>();
 
+/** match-v5 의 championName 과 Data Dragon 파일 이름이 다른 챔피언 */
+const CHAMPION_ID_FIX: Record<string, string> = { FiddleSticks: "Fiddlesticks" };
+export function ddChampionId(championName: string): string {
+  return CHAMPION_ID_FIX[championName] ?? championName;
+}
+
 async function loadCatalog(version: string): Promise<FullCatalog> {
   const [items, champions, spells, runes] = await Promise.all([
     ddFetch<RawItemJson>(`/cdn/${version}/data/ko_KR/item.json`),
@@ -88,8 +94,14 @@ async function loadCatalog(version: string): Promise<FullCatalog> {
 function getCatalog(version: string): Promise<FullCatalog> {
   let cached = catalogCache.get(version);
   if (!cached) {
-    cached = loadCatalog(version).catch(() => ({ items: {}, champions: {}, spells: {}, runes: {} }));
-    catalogCache.set(version, cached);
+    const p = loadCatalog(version).catch(() => ({ items: {}, champions: {}, spells: {}, runes: {} }) as FullCatalog);
+    cached = p;
+    catalogCache.set(version, p);
+    // 일부라도 못 받아왔으면 다음 요청에서 다시 시도
+    p.then((c) => {
+      const incomplete = [c.items, c.champions, c.spells, c.runes].some((m) => Object.keys(m).length === 0);
+      if (incomplete) catalogCache.delete(version);
+    });
   }
   return cached;
 }
@@ -106,7 +118,8 @@ export async function buildAssetBundle(matches: Match[], version?: string): Prom
 
   for (const match of matches) {
     for (const p of match.info.participants) {
-      if (catalog.champions[p.championName]) bundle.champions[p.championName] = catalog.champions[p.championName];
+      const ko = catalog.champions[ddChampionId(p.championName)];
+      if (ko) bundle.champions[p.championName] = ko;
       for (const itemId of [p.item0, p.item1, p.item2, p.item3, p.item4, p.item5, p.item6]) {
         if (itemId && catalog.items[itemId]) bundle.items[itemId] = catalog.items[itemId];
       }
@@ -133,10 +146,10 @@ export function mergeAssetBundles(a: AssetBundle, b: AssetBundle): AssetBundle {
 
 // ---------- 이미지 URL ----------
 export function championImageUrl(championName: string, version: string): string {
-  return `${DD_BASE}/cdn/${version}/img/champion/${championName}.png`;
+  return `${DD_BASE}/cdn/${version}/img/champion/${ddChampionId(championName)}.png`;
 }
 export function championSplashUrl(championName: string): string {
-  return `${DD_BASE}/cdn/img/champion/splash/${championName}_0.jpg`;
+  return `${DD_BASE}/cdn/img/champion/splash/${ddChampionId(championName)}_0.jpg`;
 }
 export function profileIconUrl(iconId: number, version: string): string {
   return `${DD_BASE}/cdn/${version}/img/profileicon/${iconId}.png`;

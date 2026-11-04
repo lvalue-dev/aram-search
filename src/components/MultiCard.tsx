@@ -9,7 +9,8 @@ import { useAssets } from "./AssetsProvider";
 import { useNavigation } from "./NavigationProvider";
 
 export interface MultiEntry {
-  input: { gameName: string; tagLine: string };
+  input: { gameName: string; tagLine: string; tagGuessed?: boolean };
+  failed?: number;
   region: string;
   account?: RiotAccount;
   summoner?: Summoner;
@@ -36,7 +37,7 @@ export default function MultiCard({ entry }: { entry: MultiEntry }) {
 
   const { account, summoner, stats } = entry;
   const href = summonerHref({ region: entry.region, gameName: account.gameName, tagLine: account.tagLine });
-  const kdaT = kdaTone(stats.avgDeaths === 0 ? "Perfect" : stats.avgKDA);
+  const kdaT = kdaTone(stats.perfectKda ? "Perfect" : stats.avgKDA);
 
   return (
     <div className="panel panel-hover flex flex-col gap-4 p-5">
@@ -47,6 +48,10 @@ export default function MultiCard({ entry }: { entry: MultiEntry }) {
         </div>
         <div className="text-[11px] text-ink-400">Lv.{summoner.summonerLevel}</div>
       </button>
+      {entry.input.tagGuessed && (
+        <p className="-mt-2 text-[11px] text-ember-300">태그 없이 검색해 #{account.tagLine} 계정을 보여주는 중이에요. 다른 사람이면 태그를 붙여 주세요.</p>
+      )}
+      {!!entry.failed && <p className="-mt-2 text-[11px] text-ember-300">요청 한도 때문에 {entry.failed}게임을 건너뛰었어요.</p>}
 
       {stats.totalGames === 0 ? (
         <p className="text-xs text-ink-400">최근 칼바람 전적이 없어요.</p>
@@ -58,7 +63,7 @@ export default function MultiCard({ entry }: { entry: MultiEntry }) {
               <div className="num text-base font-black text-white">
                 {stats.avgKills} / <span className="text-lose">{stats.avgDeaths}</span> / {stats.avgAssists}
               </div>
-              <div className={cn("num font-bold", `tone-${kdaT}`)}>{stats.avgDeaths === 0 ? "Perfect" : stats.avgKDA} KDA</div>
+              <div className={cn("num font-bold", `tone-${kdaT}`)}>{stats.perfectKda ? "Perfect" : stats.avgKDA} KDA</div>
               <div className="num mt-1 text-ink-400">
                 나락 점수 <span className={cn("font-black", `tone-${scoreTone(stats.avgScore)}`)}>{stats.avgScore}</span> · 딜 {formatNumber(stats.avgDamage)}
               </div>

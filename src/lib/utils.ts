@@ -217,6 +217,7 @@ const DURATION_BUCKETS = [
 function emptyStats(): SummonerStats {
   return {
     totalGames: 0,
+    perfectKda: false,
     wins: 0,
     losses: 0,
     winRate: 0,
@@ -342,6 +343,7 @@ export function calcSummonerStats(matches: Match[], puuid: string): SummonerStat
   return {
     ...stats,
     totalGames: n,
+    perfectKda: deaths === 0,
     wins,
     losses: n - wins,
     winRate: Math.round((wins / n) * 100),

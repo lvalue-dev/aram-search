@@ -18,13 +18,13 @@ export default function StatsPanel({ stats }: StatsPanelProps) {
       <div className="panel p-6 text-center">
         <div className="text-3xl">❄️</div>
         <p className="mt-2 text-sm font-semibold text-ink-200">칼바람 전적이 없어요</p>
-        <p className="mt-1 text-xs text-ink-400">최근 칼바람 나락 / URF 게임이 없습니다.</p>
+        <p className="mt-1 text-xs text-ink-400">최근 칼바람 나락 / 아수라장 게임이 없습니다.</p>
       </div>
     );
   }
 
   const { winRate, avgKills, avgDeaths, avgAssists, avgKDA, championStats } = stats;
-  const kdaT = kdaTone(avgDeaths === 0 ? "Perfect" : avgKDA);
+  const kdaT = kdaTone(stats.perfectKda ? "Perfect" : avgKDA);
 
   return (
     <div className="space-y-4">
@@ -43,7 +43,7 @@ export default function StatsPanel({ stats }: StatsPanelProps) {
                 {avgKills} <span className="text-ink-500">/</span> <span className="text-lose">{avgDeaths}</span> <span className="text-ink-500">/</span> {avgAssists}
               </div>
               <div className={cn("num text-xs font-bold", `tone-${kdaT}`)}>
-                {avgDeaths === 0 ? "Perfect" : avgKDA} KDA · 킬관여 {stats.avgKillParticipation}%
+                {stats.perfectKda ? "Perfect" : avgKDA} KDA · 킬관여 {stats.avgKillParticipation}%
               </div>
             </div>
             <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-ink-400">

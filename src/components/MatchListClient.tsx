@@ -15,17 +15,21 @@ interface MatchListClientProps {
   region: string;
   /** 더 불러올 수 있는지 (초기 요청에서 count 만큼 가득 찼는지) */
   hasMore: boolean;
+  /** 다음으로 불러올 매치 id 위치 */
+  nextStart: number;
   now: number;
 }
 
 type Result = "all" | "win" | "lose";
 const PAGE = 10;
 
-export default function MatchListClient({ initialMatches, puuid, region, hasMore: initialHasMore, now }: MatchListClientProps) {
+export default function MatchListClient({ initialMatches, puuid, region, hasMore: initialHasMore, nextStart: initialNextStart, now }: MatchListClientProps) {
   const baseAssets = useAssets();
   const [extraAssets, setExtraAssets] = useState<AssetBundle | null>(null);
   const [matches, setMatches] = useState<Match[]>(initialMatches);
   const [hasMore, setHasMore] = useState(initialHasMore);
+  const [nextStart, setNextStart] = useState(initialNextStart);
+  const [failed, setFailed] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Result>("all");
@@ -40,7 +44,7 @@ export default function MatchListClient({ initialMatches, puuid, region, hasMore
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/matches?puuid=${encodeURIComponent(puuid)}&region=${region}&start=${matches.length}&count=${PAGE}`);
+      const res = await fetch(`/api/matches?puuid=${encodeURIComponent(puuid)}&region=${region}&start=${nextStart}&count=${PAGE}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "매치를 불러오지 못했습니다.");
       const incoming: Match[] = data.matches ?? [];
@@ -50,12 +54,14 @@ export default function MatchListClient({ initialMatches, puuid, region, hasMore
       });
       if (data.assets) setExtraAssets((prev) => (prev ? mergeAssetBundles(prev, data.assets) : data.assets));
       setHasMore(!!data.hasMore);
+      if (typeof data.nextStart === "number") setNextStart(data.nextStart);
+      if (data.failed) setFailed((f) => f + data.failed);
     } catch (e) {
       setError(e instanceof Error ? e.message : "오류가 발생했습니다.");
     } finally {
       setLoading(false);
     }
-  }, [loading, hasMore, puuid, region, matches.length]);
+  }, [loading, hasMore, puuid, region, nextStart]);
 
   // 무한 스크롤
   useEffect(() => {
@@ -154,6 +160,9 @@ export default function MatchListClient({ initialMatches, puuid, region, hasMore
 
         {/* 더 보기 */}
         <div ref={sentinel} className="flex flex-col items-center gap-3 py-4">
+          {failed > 0 && !error && (
+            <p className="text-xs text-ember-300">Riot 요청 한도 때문에 {failed}게임을 건너뛰었어요. 잠시 후 전적 갱신을 눌러 주세요.</p>
+          )}
           {error && (
             <p className="text-sm text-lose">
               {error}{" "}

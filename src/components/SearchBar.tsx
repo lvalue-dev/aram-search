@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { REGIONS, RegionKey, isRegionKey } from "@/types/riot";
 import { getFavorites, getRecent, removeRecent, SavedSummoner, summonerHref } from "@/lib/storage";
 import { useNavigation } from "./NavigationProvider";
-import { parseRiotId } from "@/lib/riot-id";
+import { parseRiotId, summonerPath } from "@/lib/riot-id";
 import { cn } from "@/lib/utils";
 
 interface SearchBarProps {
@@ -77,9 +77,10 @@ export default function SearchBar({ defaultValue = "", defaultRegion = "kr", siz
     return all.filter((s) => `${s.gameName}#${s.tagLine}`.toLowerCase().includes(q)).slice(0, 8);
   }, [query, recent, favorites]);
 
-  function go(target: { gameName: string; tagLine: string; region: string }) {
+  function go(target: { gameName: string; tagLine: string; region: string; tagGuessed?: boolean }) {
     setOpen(false);
-    navigate(summonerHref(target), { message: `${target.gameName}#${target.tagLine} 님의 나락 기록을 불러오는 중` });
+    const href = target.tagGuessed ? summonerPath(target) : summonerHref(target);
+    navigate(href, { message: `${target.gameName}#${target.tagLine} 님의 나락 기록을 불러오는 중` });
   }
 
   function handleSubmit(e: FormEvent) {

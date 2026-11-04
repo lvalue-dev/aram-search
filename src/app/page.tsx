@@ -94,8 +94,8 @@ export default function HomePage() {
         <div className="frost-divider mb-6" />
         <div className="grid gap-4 text-center text-xs text-ink-400 sm:grid-cols-3">
           <div>
-            <div className="text-2xl font-black text-frost-200">450 · 900</div>
-            <p className="mt-1">칼바람 나락과 URF 큐를 함께 집계합니다</p>
+            <div className="text-2xl font-black text-frost-200">450 · 2400</div>
+            <p className="mt-1">칼바람 나락과 아수라장 큐만 집계합니다</p>
           </div>
           <div>
             <div className="text-2xl font-black text-frost-200">20 → ∞</div>

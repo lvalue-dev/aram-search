@@ -14,7 +14,8 @@ export default function MultiSearchForm({ defaultRegion = "kr", defaultText = ""
   function submit(e: FormEvent) {
     e.preventDefault();
     if (ids.length === 0) return;
-    const q = ids.map((i) => `${i.gameName}#${i.tagLine}`).join(",");
+    // 태그를 생략한 이름은 그대로 보내서 결과 화면에서 "태그 추정"으로 표시
+    const q = ids.map((i) => (i.tagGuessed ? i.gameName : `${i.gameName}#${i.tagLine}`)).join(",");
     navigate(`/multi?region=${region}&q=${encodeURIComponent(q)}`, { message: `${ids.length}명의 나락 기록을 동시에 불러오는 중` });
   }
 
@@ -40,6 +41,7 @@ export default function MultiSearchForm({ defaultRegion = "kr", defaultText = ""
             <span key={`${i.gameName}#${i.tagLine}`} className="chip chip-active">
               {i.gameName}
               <span className="text-ink-400">#{i.tagLine}</span>
+              {i.tagGuessed && <span className="text-[10px] text-ember-300">태그 추정</span>}
             </span>
           ))}
           {ids.length === 0 && <span className="text-xs text-ink-500">인식된 소환사가 없어요 (최대 5명)</span>}

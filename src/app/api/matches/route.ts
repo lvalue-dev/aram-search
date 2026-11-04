@@ -17,9 +17,16 @@ export async function GET(request: NextRequest) {
 
   try {
     const pageIds = await getAllAramMatchIds(puuid, regionParam, count, start);
-    const matches = await getMatches(pageIds, regionParam, puuid);
+    const { matches, failedIds } = await getMatches(pageIds, regionParam, puuid);
     const assets = await buildAssetBundle(matches);
-    return NextResponse.json({ matches, assets, hasMore: pageIds.length >= count });
+    return NextResponse.json({
+      matches,
+      assets,
+      failed: failedIds.length,
+      // 다음 페이지는 "화면에 보인 게임 수"가 아니라 "가져온 id 수" 기준으로 이어간다
+      nextStart: start + pageIds.length,
+      hasMore: pageIds.length >= count,
+    });
   } catch (error) {
     const status = error instanceof RiotApiError ? error.status : 500;
     const message = error instanceof Error ? error.message : "알 수 없는 오류";

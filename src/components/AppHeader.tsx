@@ -67,7 +67,7 @@ export default function AppHeader() {
         <div className={cn("flex items-center gap-2", isHome && "ml-auto")}>
           <span className="hidden items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 text-[11px] font-semibold text-ink-300 lg:flex">
             <span className="h-1.5 w-1.5 rounded-full bg-aurora-teal shadow-[0_0_8px_#2dd4bf]" />
-            ARAM · URF
+            ARAM · MAYHEM
           </span>
           <Link href="/multi" onClick={(e) => { e.preventDefault(); navigate("/multi"); }} className="btn-icon md:hidden" aria-label="멀티서치">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">

@@ -6,9 +6,7 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
-    environment:
-      - RIOT_API_KEY=${RIOT_API_KEY}
-      # Riot 키 없이 데모 데이터로 띄우려면 주석 해제
-      # - MOCK_RIOT_API=1
+    # 키와 설정은 .env.local 에서만 읽는다.
+    # (여기 environment: 로 ${RIOT_API_KEY} 를 다시 적으면 셸에 값이 없을 때 빈 값으로 덮어써지므로 쓰지 않는다)
     env_file:
       - .env.local

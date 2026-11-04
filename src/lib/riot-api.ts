@@ -1,5 +1,7 @@
-import { RiotAccount, Summoner, Match, MatchParticipant, LeagueEntry, REGIONS, RegionKey } from "@/types/riot";
+import { RiotAccount, Summoner, Match, MatchParticipant, LeagueEntry, REGIONS, RegionKey, ARAM_QUEUE_IDS, HOWLING_ABYSS_MAP_ID } from "@/types/riot";
 import { mockAccount, mockLeague, mockMatch, mockMatchIds, mockSummoner } from "./mock";
+import { TtlCache } from "./ttl-cache";
+import { bucketFor, RateLimitWaitTooLong } from "./rate-limit";
 
 export class RiotApiError extends Error {
   constructor(message: string, public readonly status: number, public readonly code: "NOT_FOUND" | "RATE_LIMIT" | "FORBIDDEN" | "NO_KEY" | "UNKNOWN") {
@@ -8,31 +10,99 @@ export class RiotApiError extends Error {
   }
 }
 
+/** 데모 데이터 모드. 켜져 있으면 Riot API 를 전혀 호출하지 않고 가짜 데이터를 만든다. */
 export function isMockMode(): boolean {
   return process.env.MOCK_RIOT_API === "1";
 }
 
-async function riotFetch<T>(url: string): Promise<T> {
+// ---------- 캐시 ----------
+// 매치 상세는 끝난 게임이라 바뀌지 않는다 → 오래 캐시. 나머지는 짧게.
+const TTL = {
+  account: 10 * 60_000,
+  summoner: 60_000,
+  league: 60_000,
+  matchIds: 30_000,
+  match: 24 * 60 * 60_000,
+};
+const responseCache = new TtlCache<unknown>(3000);
+const inflight = new Map<string, Promise<unknown>>();
+
+/** 한 번의 호출에서 한도 때문에 기다릴 수 있는 최대 시간 */
+const MAX_WAIT_MS = 10_000;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+function routingOf(url: string): string {
+  return new URL(url).hostname.split(".")[0];
+}
+
+async function riotFetchOnce<T>(url: string): Promise<T> {
   const API_KEY = process.env.RIOT_API_KEY;
   if (!API_KEY) {
     throw new RiotApiError("RIOT_API_KEY 환경변수가 설정되지 않았습니다.", 500, "NO_KEY");
   }
+  const routing = routingOf(url);
+  const bucket = bucketFor(routing);
 
-  const res = await fetch(url, {
-    headers: { "X-Riot-Token": API_KEY },
-    cache: "no-store",
-  });
+  for (let attempt = 0; ; attempt++) {
+    try {
+      await bucket.acquire(MAX_WAIT_MS);
+    } catch (e) {
+      if (e instanceof RateLimitWaitTooLong) {
+        throw new RiotApiError("Riot API 요청 한도에 도달했습니다. 잠시 후 다시 시도해주세요.", 429, "RATE_LIMIT");
+      }
+      throw e;
+    }
 
-  if (!res.ok) {
+    const res = await fetch(url, { headers: { "X-Riot-Token": API_KEY }, cache: "no-store" });
+    if (res.ok) return (await res.json()) as T;
+
+    if (res.status === 429) {
+      const retryAfter = Number(res.headers.get("Retry-After") ?? "1");
+      const waitMs = (Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : 1) * 1000;
+      bucket.block(waitMs);
+      if (attempt < 3 && waitMs <= MAX_WAIT_MS) continue;
+      throw new RiotApiError("Riot API 요청 한도에 도달했습니다. 잠시 후 다시 시도해주세요.", 429, "RATE_LIMIT");
+    }
+    if (res.status >= 500 && attempt < 2) {
+      await sleep(400 * (attempt + 1));
+      continue;
+    }
     if (res.status === 404) throw new RiotApiError("소환사를 찾을 수 없습니다.", 404, "NOT_FOUND");
-    if (res.status === 429) throw new RiotApiError("API 요청 한도를 초과했습니다. 잠시 후 다시 시도해주세요.", 429, "RATE_LIMIT");
     if (res.status === 403 || res.status === 401) {
       throw new RiotApiError("API 키가 만료되었거나 유효하지 않습니다.", res.status, "FORBIDDEN");
     }
     throw new RiotApiError(`Riot API 오류 (${res.status})`, res.status, "UNKNOWN");
   }
+}
 
-  return res.json();
+/** 캐시 + 동일 요청 합치기 + 한도 관리 + 재시도를 거치는 Riot API 호출 */
+async function riotFetch<T>(url: string, ttlMs: number, options?: { fresh?: boolean }): Promise<T> {
+  if (!options?.fresh) {
+    const cached = responseCache.get(url);
+    if (cached !== undefined) return cached as T;
+  }
+  const pending = inflight.get(url);
+  if (pending) return pending as Promise<T>;
+
+  const p = riotFetchOnce<T>(url)
+    .then((value) => {
+      responseCache.set(url, value, ttlMs);
+      return value;
+    })
+    .finally(() => inflight.delete(url));
+  inflight.set(url, p);
+  return p;
+}
+
+/** 전적 갱신: 소환사의 매치 목록/레벨/랭크 캐시를 비운다 */
+export function invalidateSummoner(puuid: string) {
+  const enc = encodeURIComponent(puuid);
+  responseCache.deleteWhere((key) => key.includes(`/by-puuid/${enc}`));
+}
+
+/** 테스트용: 캐시 비우기 */
+export function clearRiotCache() {
+  responseCache.clear();
 }
 
 // ---------- 매치 슬림화 ----------
@@ -137,81 +207,101 @@ function slimMatch(raw: RawMatch): Match {
 
 export async function getAccountByRiotId(gameName: string, tagLine: string, region: RegionKey = "kr"): Promise<RiotAccount> {
   if (isMockMode()) return mockAccount(gameName, tagLine);
-  const { regional } = REGIONS[region];
-  const url = `https://${regional}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`;
-  return riotFetch<RiotAccount>(url);
+  const { account } = REGIONS[region];
+  const url = `https://${account}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`;
+  return riotFetch<RiotAccount>(url, TTL.account);
 }
 
-export async function getSummonerByPuuid(puuid: string, region: RegionKey = "kr"): Promise<Summoner> {
+export async function getSummonerByPuuid(puuid: string, region: RegionKey = "kr", fresh = false): Promise<Summoner> {
   if (isMockMode()) return mockSummoner(puuid);
   const { platform } = REGIONS[region];
   const url = `https://${platform}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${encodeURIComponent(puuid)}`;
-  return riotFetch<Summoner>(url);
+  return riotFetch<Summoner>(url, TTL.summoner, { fresh });
 }
 
-export async function getLeagueEntries(puuid: string, region: RegionKey = "kr"): Promise<LeagueEntry[]> {
+export async function getLeagueEntries(puuid: string, region: RegionKey = "kr", fresh = false): Promise<LeagueEntry[]> {
   if (isMockMode()) return mockLeague(puuid);
   const { platform } = REGIONS[region];
   const url = `https://${platform}.api.riotgames.com/lol/league/v4/entries/by-puuid/${encodeURIComponent(puuid)}`;
-  return riotFetch<LeagueEntry[]>(url);
+  return riotFetch<LeagueEntry[]>(url, TTL.league, { fresh });
 }
 
-export async function getAramMatchIds(puuid: string, region: RegionKey = "kr", queueId: number = 450, count: number = 20, start: number = 0): Promise<string[]> {
+export async function getAramMatchIds(puuid: string, region: RegionKey = "kr", queueId: number = 450, count: number = 20, start: number = 0, fresh = false): Promise<string[]> {
   if (isMockMode()) return queueId === 450 ? mockMatchIds(puuid, count, start) : [];
   const { regional } = REGIONS[region];
   const url = `https://${regional}.api.riotgames.com/lol/match/v5/matches/by-puuid/${encodeURIComponent(puuid)}/ids?queue=${queueId}&start=${start}&count=${count}`;
-  return riotFetch<string[]>(url);
+  return riotFetch<string[]>(url, TTL.matchIds, { fresh });
 }
 
 export async function getMatch(matchId: string, region: RegionKey = "kr", puuid?: string): Promise<Match> {
   if (isMockMode()) return mockMatch(matchId, puuid ?? "");
   const { regional } = REGIONS[region];
   const url = `https://${regional}.api.riotgames.com/lol/match/v5/matches/${encodeURIComponent(matchId)}`;
-  const raw = await riotFetch<RawMatch>(url);
-  return slimMatch(raw);
+  const cached = responseCache.get(`slim:${url}`) as Match | undefined;
+  if (cached) return cached;
+  const raw = await riotFetch<RawMatch>(url, 0); // 원본은 크기가 커서 캐시하지 않고, 슬림화한 결과만 캐시
+  const slim = slimMatch(raw);
+  responseCache.set(`slim:${url}`, slim, TTL.match);
+  return slim;
 }
 
-/** 복수 매치 조회 (동시 10개씩, 실패한 매치는 제외) */
-export async function getMatches(matchIds: string[], region: RegionKey = "kr", puuid?: string): Promise<Match[]> {
-  const out: Match[] = [];
-  const CHUNK = 10;
-  for (let i = 0; i < matchIds.length; i += CHUNK) {
-    const chunk = matchIds.slice(i, i + CHUNK);
-    const results = await Promise.allSettled(chunk.map((id) => getMatch(id, region, puuid)));
-    for (const r of results) if (r.status === "fulfilled") out.push(r.value);
-  }
-  return out.sort((a, b) => b.info.gameCreation - a.info.gameCreation);
+export interface MatchesResult {
+  /** 최신순, 칼바람 맵 게임만 */
+  matches: Match[];
+  /** 불러오지 못한 매치 id (한도 초과 등) */
+  failedIds: string[];
+  /** 칼바람 맵이 아니라서 제외한 매치 수 */
+  excluded: number;
+}
+
+/** 복수 매치 조회. 한도 관리는 riotFetch 가 맡고, 실패한 매치는 failedIds 로 알려준다. */
+export async function getMatches(matchIds: string[], region: RegionKey = "kr", puuid?: string): Promise<MatchesResult> {
+  const results = await Promise.allSettled(matchIds.map((id) => getMatch(id, region, puuid)));
+  const matches: Match[] = [];
+  const failedIds: string[] = [];
+  let excluded = 0;
+  results.forEach((r, i) => {
+    if (r.status === "rejected") failedIds.push(matchIds[i]);
+    else if (r.value.info.mapId !== HOWLING_ABYSS_MAP_ID) excluded++;
+    else matches.push(r.value);
+  });
+  matches.sort((a, b) => b.info.gameCreation - a.info.gameCreation);
+  return { matches, failedIds, excluded };
+}
+
+/** 매치 id 의 숫자 부분 (클수록 최신) */
+function matchSeq(id: string): number {
+  const n = Number(id.slice(id.lastIndexOf("_") + 1));
+  return Number.isFinite(n) ? n : 0;
 }
 
 /**
- * ARAM(450) + ARURF(900) 매치 ID 를 합산해 최신순으로 반환.
- * 참고: 아수라장(ARAM Mayhem, 1700)은 Riot 이 API 접근을 막아 조회할 수 없다.
+ * 칼바람 큐들(450, 2400)의 매치 id 를 합쳐 최신순으로 start 부터 count 개 반환.
+ * 큐마다 앞에서부터 start+count 개를 받아 합친 뒤 잘라야 순서가 정확하다.
  */
-export async function getAllAramMatchIds(puuid: string, region: RegionKey = "kr", count: number = 20, start: number = 0): Promise<string[]> {
-  const need = start + count;
-  const [aram, urf] = await Promise.allSettled([
-    getAramMatchIds(puuid, region, 450, Math.min(need, 100)),
-    getAramMatchIds(puuid, region, 900, Math.min(need, 100)),
-  ]);
-
-  const aramIds = aram.status === "fulfilled" ? aram.value : [];
-  const urfIds = urf.status === "fulfilled" ? urf.value : [];
-
-  // 매치 ID 숫자 부분이 클수록 최신 게임 → 병합 후 내림차순 정렬
-  const combined = Array.from(new Set([...aramIds, ...urfIds]));
-  combined.sort((a, b) => Number(b.split("_")[1] ?? 0) - Number(a.split("_")[1] ?? 0));
+export async function getAllAramMatchIds(puuid: string, region: RegionKey = "kr", count: number = 20, start: number = 0, fresh = false): Promise<string[]> {
+  const need = Math.min(start + count, 100);
+  const lists = await Promise.allSettled(ARAM_QUEUE_IDS.map((q) => getAramMatchIds(puuid, region, q, need, 0, fresh)));
+  const ok = lists.filter((r): r is PromiseFulfilledResult<string[]> => r.status === "fulfilled");
+  if (ok.length === 0) {
+    const first = lists[0] as PromiseRejectedResult;
+    throw first.reason;
+  }
+  const combined = Array.from(new Set(ok.flatMap((r) => r.value)));
+  combined.sort((a, b) => matchSeq(b) - matchSeq(a));
   return combined.slice(start, start + count);
 }
 
 /** 소환사 페이지에 필요한 모든 데이터를 한 번에 가져온다 */
-export async function loadSummonerProfile(gameName: string, tagLine: string, region: RegionKey, matchCount = 20) {
+export async function loadSummonerProfile(gameName: string, tagLine: string, region: RegionKey, matchCount = 20, options?: { fresh?: boolean }) {
+  const fresh = !!options?.fresh;
   const account = await getAccountByRiotId(gameName, tagLine, region);
   const [summoner, leagueEntriesRaw, matchIds] = await Promise.all([
-    getSummonerByPuuid(account.puuid, region),
-    getLeagueEntries(account.puuid, region).catch(() => [] as LeagueEntry[]),
-    getAllAramMatchIds(account.puuid, region, matchCount),
+    getSummonerByPuuid(account.puuid, region, fresh),
+    getLeagueEntries(account.puuid, region, fresh).catch(() => [] as LeagueEntry[]),
+    getAllAramMatchIds(account.puuid, region, matchCount, 0, fresh),
   ]);
   const leagueEntries = Array.isArray(leagueEntriesRaw) ? leagueEntriesRaw : [];
-  const matches = await getMatches(matchIds, region, account.puuid);
-  return { account, summoner, leagueEntries, matchIds, matches };
+  const { matches, failedIds, excluded } = await getMatches(matchIds, region, account.puuid);
+  return { account, summoner, leagueEntries, matchIds, matches, failedIds, excluded };
 }
